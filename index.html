@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRUD Application</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <style>
+    /* 1. Налаштування анімованого фону */
+    body {
+        background: #f7f7f7; 
+        min-height: 100vh;
+    }
+    
+    .animated-gradient-bg {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%; 
+        animation: gradientShift 15s ease infinite; 
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* 2. Стилі для ефекту "РІДКОГО СКЛА" */
+    .glass-card {
+        background-color: rgba(255, 255, 255, 0.2); /* Напівпрозорий фон */
+        backdrop-filter: blur(10px); /* Ефект розмиття (головний для Liquid Glass) */
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Легка світла рамка */
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.17); /* Сучасна тінь */
+        color: white; /* Змінюємо колір тексту на білий або світлий */
+    }
+
+    /* 3. Коригування тексту та елементів усередині скла */
+    .glass-card .card-title, .glass-card h2, .glass-card strong {
+        color: #ffffff; /* Білий заголовок */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    .glass-card .text-muted, .glass-card .text-dark, .glass-card .text-info {
+        color: #ddd !important; /* Світло-сірий текст */
+    }
+    .glass-card input.form-control {
+        background-color: rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        color: white; /* Колір введеного тексту */
+    }
+    .glass-card input.form-control::placeholder {
+        color: #ddd;
+    }
+
+    .error-message { 
+        color: #ffdddd; /* Червоний на світлому фоні */
+        font-weight: bold;
+    }
+    .droid-card {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Класи, що контролюють відображення */
+    .hidden { 
+        display: none !important;
+    }
+    
+    /* Клас для початкового приховування всього контенту */
+    #app-content {
+        visibility: hidden; /* Використовуємо visibility, щоб не було стрибка вмісту */
+    }
+  </style>
+</head>
+<body class="animated-gradient-bg">
+  <div class="container py-4">
+    <h1 class="mb-4 text-white">CRUD Application</h1> 
+
+    <div id="auth-section" class="card p-3 mb-4 shadow-lg glass-card">
+      <div id="auth-status" class="alert alert-info p-2 mb-3">Please Register or Login to continue.</div>
+      
+      <div id="logged-out-view">
+          <h2 class="h4">Register / Login</h2>
+          <form id="auth-form" class="row g-3">
+              <div class="col-md-5">
+                  <input type="text" id="auth-username" class="form-control" placeholder="Username" required minlength="3">
+              </div>
+              <div class="col-md-5">
+                  <input type="password" id="auth-password" class="form-control" placeholder="Password" required minlength="6">
+              </div>
+              <div class="col-md-2 d-flex justify-content-end">
+                  <button type="button" id="register-btn" class="btn btn-sm btn-outline-light me-2">Register</button>
+                  <button type="button" id="login-btn" class="btn btn-sm btn-success">Login</button>
+              </div>
+              <div class="col-12"><div id="auth-error" class="error-message"></div></div>
+          </form>
+      </div>
+      
+      <div id="logged-in-view" class="hidden">
+          <div class="d-flex justify-content-between align-items-center">
+              <span>Welcome, <strong id="current-username"></strong>! You can now manage your droids.</span>
+              <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
+          </div>
+      </div>
+    </div>
+
+    <div id="app-content">
+      
+      <div class="card p-4 mb-4 shadow-lg glass-card">
+          <h2 class="h4 card-title">Create / Edit Droid</h2>
+          <form id="form" class="row g-3">
+              <div class="col-12"><div id="form-errors" class="error-message"></div></div>
+
+              <div class="col-md-4"><input id="name" class="form-control" placeholder="Name" required minlength="3" maxlength="50" data-field="name"><div class="error-message" id="error-name"></div></div>
+              <div class="col-md-4"><input id="manufacturer" class="form-control" placeholder="Manufacturer" maxlength="50" data-field="manufacturer"><div class="error-message" id="error-manufacturer"></div></div>
+              <div class="col-md-4"><input id="year_production" type="number" class="form-control" min="1900" max="2100" placeholder="Year" data-field="year_production"><div class="error-message" id="error-year_production"></div></div>
+
+              <div class="col-md-4"><input id="status" class="form-control" placeholder="Status" maxlength="50" data-field="status"><div class="error-message" id="error-status"></div></div>
+              <div class="col-md-4"><input id="model" class="form-control" placeholder="Model" maxlength="50" data-field="model"><div class="error-message" id="error-model"></div></div>
+              <div class="col-md-4"><input id="battery_level" type="number" class="form-control" min="0" max="100" placeholder="Battery level (0-100)" data-field="battery_level"><div class="error-message" id="error-battery_level"></div></div>
+
+              <div class="col-md-6"><input id="mission" class="form-control" placeholder="Mission Description" maxlength="255" data-field="mission"><div class="error-message" id="error-mission"></div></div>
+              <div class="col-md-6"><input id="last_maintenance" type="date" class="form-control" placeholder="Last Maintenance Date" data-field="last_maintenance"><div class="error-message" id="error-last_maintenance"></div></div>
+              
+              <div class="col-12">
+                  <input type="hidden" id="id" data-field="id">
+                  <button type="submit" class="btn btn-primary me-2">Save Droid</button>
+                  <button type="button" id="cancel" class="btn btn-secondary">Cancel</button>
+              </div>
+          </form>
+      </div>
+
+      <div class="card p-4 shadow-lg glass-card">
+          <h2 class="h4 card-title">Droids List (Your Private Data)</h2>
+          <div id="list" class="list-group">
+              <div class="list-group-item">Loading droids...</div>
+          </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+  <script>
+    // --- JS LOGIC (ONLY CHANGES TO HIDE/SHOW) ---
+    
+    const API = 'http://localhost:3001';
+    const API_DROIDS = API + '/droids';
+    
+    // Елементи UI
+    const listDiv = document.getElementById('list');
+    const form = document.getElementById('form');
+    const authForm = document.getElementById('auth-form');
+    const appContent = document.getElementById('app-content');
+    const loggedInView = document.getElementById('logged-in-view');
+    const loggedOutView = document.getElementById('logged-out-view');
+    const authStatus = document.getElementById('auth-status');
+    const currentUsername = document.getElementById('current-username');
+    const authErrorDiv = document.getElementById('auth-error');
+
+    // Функція для очищення всіх повідомлень про помилки
+    function clearErrors() {
+        document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    }
+
+    // Функція для відображення помилок з API
+    function displayApiErrors(j) {
+        clearErrors();
+        
+        const generalErrorsDiv = document.getElementById('form-errors');
+        generalErrorsDiv.textContent = j.error + (j.message ? ': ' + j.message : '');
+
+        if (j.fieldErrors && Array.isArray(j.fieldErrors)) {
+            j.fieldErrors.forEach(err => {
+                const errorDiv = document.getElementById(`error-${err.field}`);
+                if (errorDiv) {
+                    errorDiv.textContent = `* ${err.message}`;
+                } else {
+                    generalErrorsDiv.textContent += ` [${err.field}: ${err.message}]`;
+                }
+            });
+        }
+    }
+
+    async function checkAuthStatus() {
+        authStatus.textContent = 'Checking session...';
+        authStatus.classList.remove('alert-success', 'alert-danger');
+        authStatus.classList.add('alert-info');
+        
+        try {
+            const res = await fetch(API + '/status', {credentials: 'include'});
+            const data = await res.json();
+
+            if (data.isLoggedIn) {
+                // КОРИСТУВАЧ ЗАЛОГІНЕНИЙ: ВІДОБРАЖАЄМО КОНТЕНТ
+                currentUsername.textContent = data.username;
+                loggedInView.classList.remove('hidden');
+                loggedOutView.classList.add('hidden');
+                
+                // ВАЖЛИВО: робимо вміст видимим тільки тут
+                appContent.style.visibility = 'visible'; 
+                
+                authStatus.classList.remove('alert-info');
+                authStatus.classList.add('alert-success');
+                authStatus.textContent = `Logged in as ${data.username}. Ready to manage droids.`;
+                load(); 
+            } else {
+                // КОРИСТУВАЧ НЕ ЗАЛОГІНЕНИЙ: ХОВАЄМО КОНТЕНТ
+                currentUsername.textContent = '';
+                loggedInView.classList.add('hidden');
+                loggedOutView.classList.remove('hidden');
+                
+                // ВАЖЛИВО: ховаємо вміст
+                appContent.style.visibility = 'hidden'; 
+                
+                authStatus.classList.remove('alert-success');
+                authStatus.classList.add('alert-info');
+                authStatus.textContent = 'Please register or login to manage your private droids.';
+            }
+        } catch(e) {
+            authStatus.classList.remove('alert-info', 'alert-success');
+            authStatus.classList.add('alert-danger');
+            authStatus.textContent = 'Error connecting to API. Is the server running on port 3001?';
+            console.error(e);
+            // Навіть у разі помилки підключення, контент залишається прихованим
+            appContent.style.visibility = 'hidden'; 
+        }
+    }
+
+    async function handleAuth(endpoint) {
+        authErrorDiv.textContent = '';
+        const username = document.getElementById('auth-username').value;
+        const password = document.getElementById('auth-password').value;
+
+        if (!username || !password) {
+            authErrorDiv.textContent = 'Username and password are required.';
+            return;
+        }
+
+        try {
+            const res = await fetch(API + endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            
+            if (res.ok && data.message) {
+                authForm.reset();
+                checkAuthStatus();
+            } else if (res.status === 400 || res.status === 401 || res.status === 409) {
+                authErrorDiv.textContent = data.message || data.error || 'Authentication error.';
+            } else {
+                authErrorDiv.textContent = 'An unexpected server error occurred: ' + res.status;
+            }
+
+        } catch(e) {
+            authErrorDiv.textContent = 'Failed to connect to the server (check console).';
+        }
+    }
+
+    document.getElementById('register-btn').onclick = () => handleAuth('/register');
+    document.getElementById('login-btn').onclick = () => handleAuth('/login');
+    document.getElementById('logout-btn').onclick = async () => {
+        const res = await fetch(API + '/logout', { method: 'POST', credentials: 'include' });
+        if (res.ok) checkAuthStatus();
+    };
+
+
+    async function load() {
+      clearErrors();
+      const res = await fetch(API_DROIDS, {credentials: 'include'});
+      
+      if (res.status === 401) {
+          checkAuthStatus();
+          return;
+      }
+      
+      const arr = await res.json();
+      if (!Array.isArray(arr)) { 
+          listDiv.innerHTML = `<div class="alert alert-danger">${arr.error || 'Error loading'}</div>`; 
+          return; 
+      }
+      
+      if (arr.length === 0) {
+          listDiv.innerHTML = `<div class="alert alert-info">No droids found. Add a new one!</div>`;
+          return;
+      }
+
+      listDiv.innerHTML = arr.map(d => `
+        <div class="list-group-item d-flex justify-content-between align-items-center droid-card bg-transparent">
+          <div>
+              <strong class="text-white">${escapeHtml(d.name)}</strong> 
+              <span class="badge bg-secondary">${d.year_production || 'N/A'}</span>
+              
+              <div class="text-white-50 small mt-1">
+                  Model: ${escapeHtml(d.model || 'N/A')} | 
+                  Manufacturer: ${escapeHtml(d.manufacturer || 'N/A')} |
+                  Battery: <span class="badge bg-${d.battery_level > 50 ? 'success' : d.battery_level > 20 ? 'warning' : 'danger'}">${d.battery_level || 'N/A'}%</span>
+              </div>
+              <div class="text-info small">Status: ${escapeHtml(d.status || 'Unknown')}</div>
+              <div class="text-white small">Mission: ${escapeHtml(d.mission || 'None')}</div>
+              <div class="text-warning small">Last Maint.: ${escapeHtml(d.last_maintenance || 'N/A')}</div>
+          </div>
+          
+          <div>
+            <button onclick="edit(${d.id})" class="btn btn-sm btn-warning me-2">Edit</button>
+            <button onclick="del(${d.id})" class="btn btn-sm btn-danger">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.edit = async (id) => {
+      clearErrors();
+      const res = await fetch(API_DROIDS + '/' + id, {credentials: 'include'});
+      // ... (Rest of edit logic)
+      if (res.status === 401) { checkAuthStatus(); return; }
+      if (res.status === 404) return alert('Not found');
+      
+      const d = await res.json();
+      
+      document.getElementById('id').value = d.id;
+      document.getElementById('name').value = d.name;
+      document.getElementById('manufacturer').value = d.manufacturer || '';
+      document.getElementById('year_production').value = d.year_production || '';
+      document.getElementById('status').value = d.status || '';
+      document.getElementById('model').value = d.model || '';
+      document.getElementById('battery_level').value = d.battery_level || '';
+      document.getElementById('mission').value = d.mission || '';
+      document.getElementById('last_maintenance').value = d.last_maintenance || '';
+    };
+
+    window.del = async (id) => {
+      clearErrors();
+      if (!confirm('Delete?')) return;
+      
+      const res = await fetch(API_DROIDS + '/' + id, { method: 'DELETE', credentials: 'include' });
+      
+      if (res.status === 401) { checkAuthStatus(); return; }
+      if (res.status === 404) alert('Not found');
+      
+      load();
+    };
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      
+      if (!form.checkValidity()) {
+        displayApiErrors({ error: 'Client-side validation failed', message: 'Please correct the highlighted fields.' });
+        return;
+      }
+      
+      clearErrors();
+      const id = document.getElementById('id').value;
+      
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        manufacturer: document.getElementById('manufacturer').value.trim() || null,
+        year_production: document.getElementById('year_production').value ? Number(document.getElementById('year_production').value) : null,
+        status: document.getElementById('status').value.trim() || null,
+        model: document.getElementById('model').value.trim() || null,
+        battery_level: document.getElementById('battery_level').value ? Number(document.getElementById('battery_level').value) : null,
+        mission: document.getElementById('mission').value.trim() || null,
+        last_maintenance: document.getElementById('last_maintenance').value || null
+      };
+      
+      let res;
+      let url = API_DROIDS;
+      let method = 'POST';
+
+      if (id) {
+        url = API_DROIDS + '/' + id;
+        method = 'PUT';
+      }
+
+      res = await fetch(url, { 
+          method: method, 
+          headers: {'Content-Type':'application/json'}, 
+          body: JSON.stringify(payload), 
+          credentials: 'include' 
+      });
+
+      if (res.status === 401) {
+          checkAuthStatus();
+          alert('Unauthorized. Please login again.');
+      } else if (res.status === 400 || res.status === 409 || res.status === 422) {
+        const j = await res.json();
+        displayApiErrors(j);
+      } else if (res.status === 201 || res.status === 200) {
+        form.reset();
+        load();
+      } else {
+        alert('An unexpected error occurred: ' + res.status);
+      }
+    };
+
+    document.getElementById('cancel').onclick = () => {
+      form.reset();
+      clearErrors();
+    };
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    // Запускаємо перевірку статусу при завантаженні сторінки
+    checkAuthStatus();
+  </script>
+</body>
+</html>
