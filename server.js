@@ -52,7 +52,6 @@ app.get('/', (req, res) => {
   res.sendFile(INDEX_HTML_PATH, (err) => {
     if (err) {
       console.error('Failed to send index.html:', err);
-      // Якщо index.html не знайдено, повертаємо помилку
       res.status(500).send('Error loading frontend file. Check if index.html is in the same directory as server.js.');
     }
   });
